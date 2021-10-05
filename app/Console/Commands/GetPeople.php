@@ -47,7 +47,7 @@ class GetPeople extends Command
         $saveData = $this->captureDataService->savePeople($response, $group);
 
         if(!$saveData) {
-            echo 'Error! Run planets and starships command first!';
+            echo 'Error! People, starships or url doesnt exists ';
 
             return;
         }

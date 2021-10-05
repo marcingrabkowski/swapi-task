@@ -74,6 +74,8 @@ class CaptureDataService {
                 $this->savePeople($nextPage, true);
             }
         }
+
+        return true;
     }
 
     public function saveStarships(array $starships, ?int $group = null) :void {
