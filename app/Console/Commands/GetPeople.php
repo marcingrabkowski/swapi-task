@@ -43,7 +43,14 @@ class GetPeople extends Command
         }
 
         $response = $this->captureDataService->request('people', $this->argument('id'), 'GET', false);
-        $this->captureDataService->savePeople($response, $group);
+
+        $saveData = $this->captureDataService->savePeople($response, $group);
+
+        if(!$saveData) {
+            echo 'Error! Run planets and starships command first!';
+
+            return;
+        }
 
         echo 'success';
     }

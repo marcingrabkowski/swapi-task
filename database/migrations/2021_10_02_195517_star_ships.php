@@ -11,10 +11,11 @@ class StarShips extends Migration
      *
      * @return void
      */
-    public function up()
+    public function up() :void
     {
         Schema::create('starships', function (Blueprint $table) {
             $table->id();
+            $table->integer('external_id')->index();
             $table->string('name');
             $table->string('model');
             $table->timestamps();
@@ -26,7 +27,7 @@ class StarShips extends Migration
      *
      * @return void
      */
-    public function down()
+    public function down() :void
     {
         Schema::drop('starships');
     }

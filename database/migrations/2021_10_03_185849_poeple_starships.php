@@ -11,15 +11,15 @@ class PoepleStarships extends Migration
      *
      * @return void
      */
-    public function up()
+    public function up() :void
     {
         Schema::create('people_starships', function (Blueprint $table) {
             $table->id();
 
-            $table->integer('person_id')->unsigned();
-            $table->foreign('person_id')->references('id')->on('people')->onDelete('cascade');
-            $table->integer('starship_id')->unsigned();
-            $table->foreign('starships')->references('id')->on('starships')->onDelete('cascade');
+            $table->integer('person_external_id')->index();
+            $table->foreign('person_external_id')->references('external_id')->on('people');
+            $table->integer('starship_external_id')->index();
+            $table->foreign('starship_external_id')->references('external_id')->on('starships');
 
             $table->timestamps();
         });
@@ -30,7 +30,7 @@ class PoepleStarships extends Migration
      *
      * @return void
      */
-    public function down()
+    public function down() :void
     {
         Schema::drop('people_starships');
     }

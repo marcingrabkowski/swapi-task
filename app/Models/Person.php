@@ -14,17 +14,17 @@ class Person extends Model
 
     public function homeworld()
     {
-        return $this->hasOne(Planet::class, 'id', 'homeworld');
+        return $this->hasOne(Planet::class, 'external_id', 'homeworld');
     }
 
     public function getStarshipsAttribute() {
-        $related = PersonStarship::where('person_id', $this->id)->with('starships')->get();
+        $related = PersonStarship::where('person_external_id', $this->external_id)->with('starships')->get();
 
         $this->attributes['starships'] = [];
-        foreach ($related as $record) {
-            $this->attributes['starships'] = $record->starships;
-        }
 
+        foreach ($related as $record) {
+            array_push($this->attributes['starships'],  $record->starships);
+        }
 
         return $this->attributes['starships'];
     }

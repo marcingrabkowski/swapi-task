@@ -11,12 +11,17 @@ class CaptureDataService {
 
     private $url = 'https://swapi.dev/api/';
 
-    public function savePeople(array $people, ?int $group = null) :void {
+    public function savePeople(array $people, ?int $group = null) {
         if(!$group) {
             $personRecord = Person::where('name', $people['name'])->first();
 
             if (!$personRecord) {
                 $personRecord = new Person();
+                $personRecord->external_id = $this->getIdFromUrl($personRecord['url']);
+            }
+
+            if(!$this->getHomeworldByUrl($people['homeworld'])) {
+                return false;
             }
 
             $personRecord->name = $people['name'];
@@ -29,8 +34,9 @@ class CaptureDataService {
             $personRecord->gender = $people['gender'];
 
             $personRecord->save();
+
             foreach($people['starships'] as $starship) {
-                $this->savePersonStarshipsFromUrl($starship, $personRecord->id);
+                $this->savePersonStarships($starship, $personRecord->external_id);
             }
         }
 
@@ -38,8 +44,13 @@ class CaptureDataService {
             foreach ($people['results'] as $key => $person) {
                 $personRecord = Person::where('name', $person['name'])->first();
 
+                if(!$this->getHomeworldByUrl($person['homeworld'])) {
+                    return false;
+                }
+
                 if (!$personRecord) {
                     $personRecord = new Person();
+                    $personRecord->external_id = $this->getIdFromUrl($person['url']);
                 }
 
                 $personRecord->name = $person['name'];
@@ -54,11 +65,11 @@ class CaptureDataService {
                 $personRecord->save();
 
                 foreach($person['starships'] as $starship) {
-                    $this->savePersonStarshipsFromUrl($starship, $personRecord->id);
+                    $this->savePersonStarships($starship, $personRecord->external_id);
                 }
             }
 
-            if(array_key_exists('next', $people)) {
+            if(array_key_exists('next', $people) && $people['next']) {
                 $nextPage = $this->request($people['next'], null, 'GET', true);
                 $this->savePeople($nextPage, true);
             }
@@ -71,6 +82,7 @@ class CaptureDataService {
 
             if (!$starshipRecord) {
                 $starshipRecord = new Starship();
+                $starshipRecord->external_id = $this->getIdFromUrl($starshipRecord['url']);
             }
 
             $starshipRecord->name = $starships['name'];
@@ -85,12 +97,18 @@ class CaptureDataService {
 
                 if (!$starshipRecord) {
                     $starshipRecord = new Starship();
+                    $starshipRecord->external_id = $this->getIdFromUrl($starship['url']);
                 }
 
                 $starshipRecord->name = $starship['name'];
                 $starshipRecord->model = $starship['model'];
 
                 $starshipRecord->save();
+            }
+
+            if(array_key_exists('next', $starships) && $starships['next']) {
+                $nextPage = $this->request($starships['next'], null, 'GET', true);
+                $this->saveStarships($nextPage, true);
             }
         }
     }
@@ -102,6 +120,7 @@ class CaptureDataService {
 
             if (!$planetRecord) {
                 $planetRecord = new Planet();
+                $planetRecord->external_id = $this->getIdFromUrl($planetRecord['url']);
             }
 
             $planetRecord->name = $planets['name'];
@@ -116,6 +135,7 @@ class CaptureDataService {
 
                 if (!$planetRecord) {
                     $planetRecord = new Planet();
+                    $planetRecord->external_id = $this->getIdFromUrl($planet['url']);
                 }
 
                 $planetRecord->name = $planet['name'];
@@ -123,45 +143,46 @@ class CaptureDataService {
 
                 $planetRecord->save();
             }
+
+
+            if(array_key_exists('next', $planets) && $planets['next']) {
+                $nextPage = $this->request($planets['next'], null, 'GET', true);
+                $this->savePlanets($nextPage, true);
+            }
         }
+    }
+
+    public function getIdFromUrl($url) {
+        return (int) filter_var($url, FILTER_SANITIZE_NUMBER_INT);
     }
 
     public function getHomeworldByUrl (string $url) :?int {
-        $homeworld = $this->request($url, null, 'GET', true);
-        $planet = Planet::where('name', $homeworld['name'])->first();
+        $homeworld = $this->getIdFromUrl($url);
+        $planet = Planet::where('external_id', $homeworld)->first();
 
-        if(!$planet) {
-            $planet = new Planet();
+        if($planet) {
+            return $planet->id;
         }
 
-        $planet->name = $homeworld['name'];
-        $planet->terrain = $homeworld['terrain'];
-
-        $planet->save();
-
-        return $planet->id;
+        return false;
     }
 
-    public function savePersonStarshipsFromUrl (string $url, int $id) :void {
-        $starship = $this->request($url, null, 'GET', true);
+    public function savePersonStarships (string $url, int $id) :void {
+        $starship = $this->getIdFromUrl($url);
 
-        $starshipRecord  = Starship::where('name', $starship['name'])->first();
+        $starshipRecord  = Starship::where('external_id', $starship)->first();
 
-        if(!$starshipRecord ) {
-            $starshipRecord = new Starship();
-            $starshipRecord->name = $starship['name'];
-            $starshipRecord->model = $starship['model'];
-
-            $starshipRecord->save();
+        if(!$starshipRecord) {
+            return;
         }
 
-        $isRelationExists = PersonStarship::where('person_id', $id)->where('starship_id', $starshipRecord->id)->first();
+        $isRelationExists = PersonStarship::where('person_external_id', $id)->where('starship_external_id', $starshipRecord->external_id)->first();
 
         if(!$isRelationExists) {
             $relation = new PersonStarship();
 
-            $relation->person_id = $id;
-            $relation->starship_id = $starshipRecord->id;
+            $relation->person_external_id = $id;
+            $relation->starship_external_id = $starshipRecord->external_id;
             $relation->save();
         }
     }
@@ -173,6 +194,8 @@ class CaptureDataService {
         if($fulladdress) {
             $endpoint = $path;
         }
+
+        echo 'Current url: '.$endpoint.PHP_EOL;
 
         $client = new \GuzzleHttp\Client();
 

@@ -57,7 +57,9 @@
                         params += '<p>Homeworld: ' + item['homeworld']['name'] + '</p>';
                         if(item['starships']) {
                             jQuery.each(item['starships'], function (key, value) {
-                                params += '<p><b>Ship #'+key+'</b>: ' + value['name'] + '</p>';
+                                jQuery.each(value, function (ship, shipData) {
+                                    params += '<p><b>Ship #' + key + '</b>: ' + shipData['name'] + '</p>';
+                                });
                             });
                         }
 

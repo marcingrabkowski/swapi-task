@@ -11,10 +11,11 @@ class Planets extends Migration
      *
      * @return void
      */
-    public function up()
+    public function up() :void
     {
         Schema::create('planets', function (Blueprint $table) {
             $table->id();
+            $table->integer('external_id')->unique()->index();
             $table->string('name');
             $table->string('terrain');
             $table->timestamps();
@@ -26,7 +27,7 @@ class Planets extends Migration
      *
      * @return void
      */
-    public function down()
+    public function down() :void
     {
         Schema::drop('planets');
     }

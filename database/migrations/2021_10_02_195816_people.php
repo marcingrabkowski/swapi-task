@@ -11,17 +11,20 @@ class People extends Migration
      *
      * @return void
      */
-    public function up()
+    public function up() :void
     {
         Schema::create('people', function (Blueprint $table) {
             $table->id();
+            $table->integer('external_id')->index();
             $table->string('name');
             $table->string('height');
             $table->string('mass');
             $table->string('hair_color');
             $table->string('gender');
-            $table->integer('homeworld')->unsigned();
-            $table->foreign('homeworld')->references('id')->on('planets')->onDelete('cascade');
+            $table->integer('homeworld')->index()->nullable();
+            $table->foreign('homeworld')
+                ->references('external_id')
+                ->on('planets');
             $table->timestamps();
         });
     }
@@ -31,7 +34,7 @@ class People extends Migration
      *
      * @return void
      */
-    public function down()
+    public function down() :void
     {
         Schema::drop('people');
     }
